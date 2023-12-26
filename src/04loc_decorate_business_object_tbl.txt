@@ -1,0 +1,63 @@
+DECLARE
+
+    v_tab CHAR := chr(9);
+    v_line_break VARCHAR2(2 CHAR) := chr(10);
+
+    v_main_dataowner VARCHAR2(255 CHAR); --Defaults to CURRENT_SCHEMA if left empty
+    v_main_tbl VARCHAR2(255 CHAR) := 'TBL_NAME';
+
+    v_bo_status_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
+    v_bo_status_tbl VARCHAR2(255 CHAR) := 'DH_BO_STATUS';
+
+    v_system_ref_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
+    v_system_ref_tbl VARCHAR2(255 CHAR) := 'DH_SYSTEMS';
+
+    v_data_flow_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
+    v_data_flow_tbl VARCHAR2(255 CHAR) := 'DH_FLOWS';
+
+    v_sql_stmt CLOB;
+
+BEGIN
+
+    IF v_main_dataowner IS NULL
+    THEN
+        SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') INTO v_main_dataowner FROM dual;
+    END IF;
+
+    IF v_bo_status_dataowner IS NULL
+    THEN
+        v_bo_status_dataowner := v_main_dataowner;
+    END IF;
+
+    IF v_system_ref_dataowner IS NULL
+    THEN
+        v_system_ref_dataowner := v_main_dataowner;
+    END IF;
+
+    IF v_data_flow_dataowner IS NULL
+    THEN
+        v_data_flow_dataowner := v_main_dataowner;
+    END IF;
+
+
+    v_sql_stmt := 'ALTER TABLE "' || v_main_dataowner || '"."' || v_main_tbl || '" ADD' || v_line_break
+        || '(' || v_line_break
+        || v_tab || '"STATUS" REFERENCES "' || v_bo_status_dataowner || '"."' || v_bo_status_tbl || '"("OID") ENABLE,' || v_line_break
+        --|| v_tab || '"STATUS" VARCHAR2(15 CHAR),' || v_line_break
+        || v_tab || '"STATUS_DTL" VARCHAR2(63 CHAR),' || v_line_break
+
+        || v_tab || '"TARGET_SYSTEM" REFERENCES "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '"("OID") ENABLE,' || v_line_break
+        --|| v_tab || '"TARGET_SYSTEM" VARCHAR2(15 CHAR),' || v_line_break
+
+        || v_tab || '"CURRENT_MOD_SRC_TYPE" VARCHAR2(63 CHAR),' || v_line_break
+        || v_tab || '"CURRENT_MOD_SRC" VARCHAR2(63 CHAR),' || v_line_break
+
+        || v_tab || '"SOURCE_OBJ" REFERENCES "' || v_data_flow_dataowner || '"."' || v_data_flow_tbl || '"("OID") ENABLE NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"TARGET_OBJ" REFERENCES "' || v_data_flow_dataowner || '"."' || v_data_flow_tbl || '"("OID") ENABLE' || v_line_break
+        || ')';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+END;

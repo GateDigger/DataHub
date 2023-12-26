@@ -1,0 +1,123 @@
+DECLARE
+
+    v_tab CHAR := chr(9);
+    v_line_break VARCHAR2(2 CHAR) := chr(10);
+
+    v_main_dataowner VARCHAR2(255 CHAR); --Defaults to CURRENT_SCHEMA if left empty
+    v_main_tbl VARCHAR2(255 CHAR) := 'TBL_NAME';
+
+    v_rules_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
+    v_rules_tbl VARCHAR2(255 CHAR) := 'DH_RULES_TBL_' || v_main_tbl;
+
+    v_err_log_proc_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
+    v_err_log_proc_name VARCHAR2(255 CHAR) := 'DH_RULES_ERR_LOG_' || v_main_tbl;
+
+    v_proc_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
+    v_proc_name VARCHAR2(255 CHAR) := 'DH_RULES_APPLY_' || v_main_tbl;
+    v_proc_commit_threshold INTEGER := 25; --0 for mass commit after loop, 1 for regular commits
+
+    v_sql_stmt_main_commit_clause CLOB;
+    v_sql_stmt_final_commit_clause CLOB;
+    v_sql_stmt CLOB;
+
+BEGIN
+
+    IF v_main_dataowner IS NULL
+    THEN
+        SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') INTO v_main_dataowner FROM dual;
+    END IF;
+
+    IF v_rules_dataowner IS NULL
+    THEN
+        v_rules_dataowner := v_main_dataowner;
+    END IF;
+
+    IF v_err_log_proc_dataowner IS NULL
+    THEN
+        v_err_log_proc_dataowner := v_main_dataowner;
+    END IF;
+
+    IF v_proc_dataowner IS NULL
+    THEN
+        v_proc_dataowner := v_main_dataowner;
+    END IF;
+
+    IF v_proc_commit_threshold < 1
+    THEN
+
+        v_sql_stmt_main_commit_clause := NULL;
+        v_sql_stmt_final_commit_clause := v_tab || 'COMMIT;' || v_line_break || v_line_break;
+
+    ELSIF v_proc_commit_threshold = 1
+    THEN
+
+        v_sql_stmt_main_commit_clause := v_tab || v_tab || v_tab || 'COMMIT;' || v_line_break
+            || v_tab || v_tab || v_tab || 'v_last_commit_oid := DH_RULE."OID";' || v_line_break || v_line_break;
+        v_sql_stmt_final_commit_clause := NULL;
+
+    ELSE
+
+        v_sql_stmt_main_commit_clause := v_tab || v_tab || v_tab || 'v_loop_counter := v_loop_counter + 1;' || v_line_break
+            || v_tab || v_tab || v_tab || 'IF v_loop_counter = ' || v_proc_commit_threshold || v_line_break
+            || v_tab || v_tab || v_tab || 'THEN' || v_line_break
+            || v_tab || v_tab || v_tab || v_tab || 'COMMIT;' || v_line_break
+            || v_tab || v_tab || v_tab || v_tab || 'v_loop_counter := 0;' || v_line_break
+            || v_tab || v_tab || v_tab || v_tab || 'v_last_commit_oid := DH_RULE."OID";' || v_line_break
+            || v_tab || v_tab || v_tab || 'END IF;' || v_line_break || v_line_break;
+        v_sql_stmt_final_commit_clause := v_tab || 'IF v_loop_counter > 0' || v_line_break
+            || v_tab || 'THEN' || v_line_break
+            || v_tab || v_tab || 'COMMIT;' || v_line_break
+            || v_tab || 'END IF;' || v_line_break || v_line_break;
+
+    END IF;
+
+    v_sql_stmt := 'CREATE OR REPLACE PROCEDURE "' || v_proc_dataowner || '"."' || v_proc_name || '" IS' || v_line_break
+        || v_line_break
+        || (CASE v_proc_commit_threshold < 2 WHEN TRUE THEN NULL ELSE v_tab || '--v_commit_threshold was hardcoded to the value of ' || v_proc_commit_threshold || v_line_break END)
+        || (CASE v_proc_commit_threshold < 2 WHEN TRUE THEN NULL ELSE v_tab || 'v_loop_counter INTEGER := 0;' || v_line_break END)
+        || v_tab || 'v_current_rule INTEGER := 0;' || v_line_break
+        || v_tab || 'v_last_commit_oid INTEGER := 0;' || v_line_break
+        || v_line_break
+        || v_tab || 'v_sql_stmt CLOB;' || v_line_break
+        || v_line_break
+        || 'BEGIN' || v_line_break
+        || v_line_break
+        || v_tab || 'FOR DH_RULE IN ' || v_line_break
+        || v_tab || '(' || v_line_break
+        || v_tab || v_tab || 'SELECT R."OID", R."WHERE_CLAUSE", R."SET_CLAUSE", R."ON_SUCCESS_CLAUSE" FROM "' || v_rules_dataowner || '"."' || v_rules_tbl || '" R' || v_line_break
+        || v_tab || v_tab || 'WHERE SYSDATE BETWEEN R."ACTIVE_FROM" AND R."ACTIVE_TO"' || v_line_break
+        || v_tab || v_tab || 'ORDER BY R."PRIORITY_LBH" ASC, R."OID" ASC' || v_line_break
+        || v_tab || ')' || v_line_break
+        || v_tab || 'LOOP' || v_line_break
+        || v_line_break
+        || v_tab || v_tab || 'v_current_rule := DH_RULE."OID";' || v_line_break
+        || v_tab || v_tab || 'v_sql_stmt := ''UPDATE "' || v_main_dataowner || '"."' || v_main_tbl || '" SET "CURRENT_MOD_SRC_TYPE" = ''''rule'''', "CURRENT_MOD_SRC" = '' || v_current_rule || '', '' || DH_RULE."SET_CLAUSE" || '' WHERE "STATUS" = 1 AND '' || DH_RULE."WHERE_CLAUSE";' || v_line_break
+        || v_tab || v_tab || 'EXECUTE IMMEDIATE v_sql_stmt;' || v_line_break
+        || v_line_break
+        || v_tab || v_tab || 'IF SQL%ROWCOUNT > 0' || v_line_break
+        || v_tab || v_tab || 'THEN' || v_line_break
+        || v_line_break
+        || v_tab || v_tab || v_tab || 'IF DH_RULE."ON_SUCCESS_CLAUSE" IS NOT NULL' || v_line_break
+        || v_tab || v_tab || v_tab || 'THEN' || v_line_break
+        || v_tab || v_tab || v_tab || v_tab || 'EXECUTE IMMEDIATE DH_RULE."ON_SUCCESS_CLAUSE";' || v_line_break
+        || v_tab || v_tab || v_tab || 'END IF;' || v_line_break
+        || v_line_break
+        || v_sql_stmt_main_commit_clause
+        || v_tab || v_tab || 'END IF;' || v_line_break
+        || v_line_break
+        || v_tab || 'END LOOP;' || v_line_break
+        || v_line_break
+        || v_sql_stmt_final_commit_clause
+        || 'EXCEPTION' || v_line_break
+        || v_line_break
+        || v_tab || 'WHEN OTHERS THEN' || v_line_break
+        || v_tab || v_tab || '"' || v_err_log_proc_dataowner || '"."' || v_err_log_proc_name || '"(v_current_rule, v_last_commit_oid, SQLERRM);' || v_line_break
+        || v_tab || v_tab || 'ROLLBACK;' || v_line_break
+        || v_line_break
+        || 'END;';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+END;
