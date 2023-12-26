@@ -1,5 +1,5 @@
 # DataHub
-is a generic concept - a piece of software which accepts data entries from source systems, stores them, sorts and modifies them according to specified rules, and sends them to assigned target systems. This repo contains PL/SQL scripts which are capable of decorating an Oracle DB table by additional structure in order to facilitate this process. I shall call this decoration a "channel".
+is a generic concept - a piece of software which accepts data entries from source systems, stores them, sorts and modifies them according to specified rules, and sends them to assigned target systems. This repo contains PL/SQL scripts which are capable of decorating an Oracle DB table by additional structure in order to facilitate this process. I shall call such decoration a "channel".
 
 ## Overview
 Let there be a table, with a single-column primary key, which can store all data of interest. The attached PL/SQL scripts will perform the following operations
