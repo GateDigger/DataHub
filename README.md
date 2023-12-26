@@ -29,7 +29,7 @@ Let there be a table, with a single-column primary key, which can store all data
    - The loop which generates the code for the trigger contains a small blacklist, feel free to extend it
 7. [07loc_create_rule_tbl.txt](src/07loc_create_rule_tbl.txt)
    - Creates a table of rules which will sort and modify pending entries in the main table
-   - creation_date, active_from, active_to and self-explanatory, refer to the content of point 9 for the rest
+   - creation_date, active_from and active_to are self-explanatory, please refer to the content of point 9 for the rest
 8. [08loc_create_rule_err_log_proc.txt](src/08loc_create_rule_err_log_proc.txt)
    - Creates an error logging procedure for point 9
    - I did not find a more compact way to utilize autonomous transactions
