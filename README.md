@@ -8,7 +8,7 @@ Let there be a table, with a single-column primary key, which can store all data
 1. [01gl_create_bo_status_tbl.txt](src/01gl_create_bo_status_tbl.txt)
    - Creates a table of possible object states
 2. [02gl_create_system_ref_tbl.txt](src/02gl_create_system_ref_tbl.txt)
-   - Creates a table of external systems the database will interact with
+   - Creates a table of external systems the DataHub will interact with
 3. [03gl_create_data_flow_tbl.txt](src/03gl_create_data_flow_tbl.txt)
    - Creates a table for bookkeeping of inbound and outbound data
 ### Local tables (one collection for each business object)
