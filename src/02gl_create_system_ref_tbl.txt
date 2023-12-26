@@ -1,0 +1,49 @@
+DECLARE
+
+    v_tab CHAR := chr(9);
+    v_line_break VARCHAR2(2 CHAR) := chr(10);
+
+    v_system_ref_dataowner VARCHAR2(255 CHAR); --Defaults to CURRENT_SCHEMA if left empty
+    v_system_ref_tbl VARCHAR2(255 CHAR) := 'DH_SYSTEMS';
+    v_system_ref_dspl_attr VARCHAR2(255 CHAR) := 'DISPLAY_CODE';
+
+    v_sql_stmt CLOB;
+
+BEGIN
+
+    IF v_system_ref_dataowner IS NULL
+    THEN
+        SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') INTO v_system_ref_dataowner FROM dual;
+    END IF;
+
+    v_sql_stmt := 'CREATE TABLE "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '"' || v_line_break
+        || '(' || v_line_break
+        || v_tab || ' "OID" NUMBER GENERATED ALWAYS AS IDENTITY (MINVALUE 1 NOMAXVALUE INCREMENT BY 1 START WITH 1 NOCACHE NOORDER NOCYCLE NOKEEP NOSCALE) NOT NULL ENABLE,' || v_line_break
+        || v_tab || ' "' || v_system_ref_dspl_attr || '" VARCHAR2(31 CHAR) NOT NULL ENABLE,' || v_line_break
+        || v_tab || ' CONSTRAINT "' || v_system_ref_tbl || '_PK" PRIMARY KEY ("OID") USING INDEX ENABLE' || v_line_break
+        || ')';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+    v_sql_stmt := 'COMMENT ON TABLE "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '" IS ''External systems list''';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+    v_sql_stmt := 'BEGIN' || v_line_break
+        || v_tab || 'INSERT INTO "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '"("' || v_system_ref_dspl_attr || '") VALUES (''void'');' || v_line_break
+        || v_tab || 'INSERT INTO "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '"("' || v_system_ref_dspl_attr || '") VALUES (''home'');' || v_line_break
+        || v_tab || 'INSERT INTO "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '"("' || v_system_ref_dspl_attr || '") VALUES (''system_1'');' || v_line_break
+        || v_tab || 'INSERT INTO "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '"("' || v_system_ref_dspl_attr || '") VALUES (''system_2'');' || v_line_break
+        || v_tab || 'INSERT INTO "' || v_system_ref_dataowner || '"."' || v_system_ref_tbl || '"("' || v_system_ref_dspl_attr || '") VALUES (''system_3'');' || v_line_break
+        || v_tab || 'COMMIT;' || v_line_break
+        || 'END;';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+END;
