@@ -18,7 +18,7 @@ Let there be a table, with a single-column primary key, which can store all data
      - status_dtl - comment on status
      - target_system - to which system the row shall be sent
      - source_obj - how it got in
-     - target_obj - how it went / will go out
+     - target_obj - how it got / will get out
      - current_mod_src_type + current_mod_src - circumstances of row updates
 5. [05loc_create_hist_tbl.txt](src/05loc_create_hist_tbl.txt)
    - Creates a table to keep track of modifications on the main table's data
