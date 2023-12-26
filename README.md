@@ -37,7 +37,7 @@ Let there be a table, with a single-column primary key, which can store all data
    - Creates a procedure which will apply rules to main objects and manage potential errors during application
    - TODO: introduce an optional parameter which would allow to resume rule application from a certain rule onwards
   
-Every script prints out the code it intends to execute; I encourage your caution and dilligence, use the comment functionality. Now hold my beer as I try to build a CRUD application upon this in APEX...
+Every script prints out the code it intends to execute; I encourage your caution and dilligence, use the comment functionality. Now it is time to build an APEX CRUD application on top of this...
 
 ## License
 
