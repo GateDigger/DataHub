@@ -1,17 +1,17 @@
 # DataHub
-is a generic concept - a piece of software which accepts data entries from source systems, stores them, sorts and modifies them according to specified rules, and sends them to assigned target systems. This repo contains PL/SQL scripts which are capable of decorating an Oracle DB table by additional structure in order to facilitate this process.
+is a generic concept - a piece of software which accepts data entries from source systems, stores them, sorts and modifies them according to specified rules, and sends them to assigned target systems. This repo contains PL/SQL scripts which are capable of decorating an Oracle DB table by additional structure in order to facilitate this process. I shall call this decoration a "channel".
 
 ## Overview
 Let there be a table, with a single-column primary key, which can store all data of interest. The attached PL/SQL scripts will perform the following operations
 
-### Global tables (one collection for the entire system)
+### General tables, one collection can serve multiple channels
 1. [01gl_create_bo_status_tbl.txt](src/01gl_create_bo_status_tbl.txt)
    - Creates a table of possible object states
 2. [02gl_create_system_ref_tbl.txt](src/02gl_create_system_ref_tbl.txt)
    - Creates a table of external systems the DataHub will interact with
 3. [03gl_create_data_flow_tbl.txt](src/03gl_create_data_flow_tbl.txt)
    - Creates a table for bookkeeping of inbound and outbound data
-### Local tables (one collection for each business object)
+### Specific tables, one collection per channel
 4. [04loc_decorate_business_object_tbl.txt](src/04loc_decorate_business_object_tbl.txt)
    - Decorates the main table by a few technical attributes
      - status - how far the row is in processing
