@@ -1,0 +1,60 @@
+DECLARE
+
+    v_tab CHAR := chr(9);
+    v_line_break VARCHAR2(2 CHAR) := chr(10);
+
+    v_data_flow_dataowner VARCHAR2(255 CHAR); --Defaults to CURRENT_SCHEMA if left empty
+    v_data_flow_tbl VARCHAR2(255 CHAR) := 'DH_DATA_FLOW';
+
+    v_external_system_dataowner VARCHAR2(255 CHAR); --Defaults to v_data_flow_dataowner if left empty
+    v_external_system_tbl VARCHAR2(255 CHAR) := 'DH_EXTERNAL_SYSTEM';
+
+    v_sql_stmt CLOB;
+
+BEGIN
+
+    IF v_data_flow_dataowner IS NULL
+    THEN
+        SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') INTO v_data_flow_dataowner FROM dual;
+    END IF;
+
+    IF v_external_system_dataowner IS NULL
+    THEN
+        v_external_system_dataowner := v_data_flow_dataowner;
+    END IF;
+
+    v_sql_stmt := 'CREATE TABLE "' || v_data_flow_dataowner || '"."' || v_data_flow_tbl || '"' || v_line_break
+        || '(' || v_line_break
+        || v_tab || '"OID" NUMBER GENERATED ALWAYS AS IDENTITY (MINVALUE 1 NOMAXVALUE INCREMENT BY 1 START WITH 1 NOCACHE ORDER NOCYCLE NOKEEP NOSCALE) NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"FLOW_SRC" CONSTRAINT "' || v_data_flow_tbl || '_SRC_FK" REFERENCES "' || v_external_system_dataowner || '"."' || v_external_system_tbl || '"("OID") ENABLE NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"FLOW_TAR" CONSTRAINT "' || v_data_flow_tbl || '_TAR_FK" REFERENCES "' || v_external_system_dataowner || '"."' || v_external_system_tbl || '"("OID") ENABLE NOT NULL ENABLE,' || v_line_break
+        --|| v_tab || '"FLOW_SRC" VARCHAR2(15 CHAR) NOT NULL ENABLE,' || v_line_break
+        --|| v_tab || '"FLOW_TAR" VARCHAR2(15 CHAR) NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"FLOW_START_DT" DATE DEFAULT SYSDATE NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"FLOW_END_DT" DATE,' || v_line_break
+        || v_tab || '"FLOW_STATUS" VARCHAR2(3 CHAR),' || v_line_break
+        || v_tab || 'CONSTRAINT "' || v_data_flow_tbl || '_PK" PRIMARY KEY ("OID") USING INDEX ENABLE' || v_line_break
+        || ')';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+    v_sql_stmt := 'COMMENT ON TABLE "' || v_data_flow_dataowner || '"."' || v_data_flow_tbl || '" IS ''Flow history for all business data''';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+    --Dummy flow object for testing purposes
+    v_sql_stmt := 'BEGIN' || v_line_break
+        || v_tab || 'INSERT INTO "' || v_data_flow_dataowner || '"."' || v_data_flow_tbl || '" ("FLOW_SRC", "FLOW_TAR") VALUES (1, 2);' || v_line_break
+        || v_tab || 'INSERT INTO "' || v_data_flow_dataowner || '"."' || v_data_flow_tbl || '" ("FLOW_SRC", "FLOW_TAR") VALUES (2, 1);' || v_line_break
+        || v_tab || 'COMMIT;' || v_line_break
+        || 'END;';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+END;
