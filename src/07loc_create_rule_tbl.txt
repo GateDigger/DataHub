@@ -1,0 +1,51 @@
+DECLARE
+
+    v_tab CHAR := chr(9);
+    v_line_break VARCHAR2(2 CHAR) := chr(10);
+
+    v_main_dataowner VARCHAR2(255 CHAR); --Defaults to CURRENT_SCHEMA if left empty
+    v_main_tbl VARCHAR2(255 CHAR) := 'WEIRDO_TBL';
+
+    v_rule_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
+    v_rule_tbl VARCHAR2(255 CHAR) := v_main_tbl || '_DH_RULE_TBL';
+
+    v_default_rule_duration NUMBER := 365;
+
+    v_sql_stmt CLOB;
+
+BEGIN
+
+    IF v_main_dataowner IS NULL
+    THEN
+        SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') INTO v_main_dataowner FROM dual;
+    END IF;
+
+    IF v_rule_dataowner IS NULL
+    THEN
+        v_rule_dataowner := v_main_dataowner;
+    END IF;
+
+    v_sql_stmt := 'CREATE TABLE "' || v_rule_dataowner || '"."' || v_rule_tbl || '"' || v_line_break
+        || '(' || v_line_break
+        || v_tab || '"OID" NUMBER GENERATED ALWAYS AS IDENTITY (MINVALUE 1 NOMAXVALUE INCREMENT BY 1 START WITH 1 NOCACHE NOORDER NOCYCLE NOKEEP NOSCALE) NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"WHERE_CLAUSE" VARCHAR2(2047 CHAR) DEFAULT ''0 = 1'' NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"SET_CLAUSE" VARCHAR2(2047 CHAR),' || v_line_break
+        || v_tab || '"ON_SUCCESS_CLAUSE" VARCHAR2(2047 CHAR),' || v_line_break
+        || v_tab || '"CREATION_DATE" DATE DEFAULT SYSDATE NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"ACTIVE_FROM" DATE DEFAULT SYSDATE NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"ACTIVE_TO" DATE DEFAULT (SYSDATE + ' || v_default_rule_duration || ') NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"PRIORITY_LBH" NUMBER(10,0) NOT NULL ENABLE,' || v_line_break
+        || v_tab || 'CONSTRAINT "' || v_rule_tbl || '_PK" PRIMARY KEY ("OID") USING INDEX ENABLE' || v_line_break
+        || ')';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+    v_sql_stmt := 'COMMENT ON TABLE "' || v_rule_dataowner || '"."' || v_rule_tbl || '" IS ''Rules for ' || v_main_dataowner || '.' || v_main_tbl || '''';
+
+    dbms_output.put_line(v_sql_stmt);
+    dbms_output.put_line(NULL);
+    EXECUTE IMMEDIATE v_sql_stmt;
+
+END;
