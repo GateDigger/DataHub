@@ -6,7 +6,7 @@ Let there be a table, with a single-column primary key, which can store all data
 
 ### General tables, one collection can serve multiple channels
 1. [01gl_create_entry_state_tbl.txt](src/01gl_create_entry_state_tbl.txt)
-   - Creates a table of states the objects can be in as they pass through the DataHub
+   - Creates a table of states the entries can be in as they pass through the DataHub
 2. [02gl_create_external_system_tbl.txt](src/02gl_create_external_system_tbl.txt)
    - Creates a table of external systems the DataHub will interact with
 3. [03gl_create_data_flow_tbl.txt](src/03gl_create_data_flow_tbl.txt)
