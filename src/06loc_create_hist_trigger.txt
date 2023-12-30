@@ -42,10 +42,10 @@ BEGIN
     IF v_main_tbl_pkey_name IS NULL
     THEN
         SELECT ACC."COLUMN_NAME" INTO v_main_tbl_pkey_name FROM ALL_CONS_COLUMNS ACC
-        WHERE (ACC."OWNER", ACC."CONSTRAINT_NAME") IN 
+            WHERE (ACC."OWNER", ACC."CONSTRAINT_NAME") IN 
             (
                 SELECT AC."OWNER", AC."CONSTRAINT_NAME" FROM ALL_CONSTRAINTS AC
-                WHERE AC."OWNER" = v_main_dataowner AND AC."TABLE_NAME" = v_main_tbl AND AC."CONSTRAINT_TYPE" = 'P' --AND AC."STATUS" = 'ENABLED'
+                WHERE AC."OWNER" = v_main_dataowner AND AC."TABLE_NAME" = v_main_tbl AND AC."CONSTRAINT_TYPE" = 'P' AND AC."STATUS" = 'ENABLED'
             );
     END IF;
     v_hist_tbl_attr_pmap_ls := ':NEW."CURRENT_MOD_SRC_TYPE", :NEW."CURRENT_MOD_SRC", :NEW."' || v_main_tbl_pkey_name || '"';    
@@ -53,15 +53,16 @@ BEGIN
     FOR DH_MT_ATTR IN
         (
             SELECT * FROM ALL_TAB_COLUMNS ATC
-            WHERE ATC."OWNER" = v_main_dataowner AND ATC."TABLE_NAME" = v_main_tbl AND ATC."COLUMN_NAME" NOT IN ('CURRENT_MOD_SRC_TYPE', 'CURRENT_MOD_SRC')
-            ORDER BY ATC."COLUMN_ID" ASC
+                WHERE ATC."OWNER" = v_main_dataowner AND ATC."TABLE_NAME" = v_main_tbl AND ATC."COLUMN_NAME" NOT IN ('CURRENT_MOD_SRC_TYPE', 'CURRENT_MOD_SRC') AND ATC."DATA_TYPE" NOT IN ('CLOB', 'BLOB', 'LONG', 'XMLTYPE')
+                ORDER BY ATC."COLUMN_ID" ASC
         )
     LOOP
         v_sql_stmt := v_sql_stmt || v_line_break
             || v_tab || 'IF UPDATING(''' || DH_MT_ATTR."COLUMN_NAME" || ''')' || v_line_break
             || v_tab || 'THEN' || v_line_break
-            || v_tab || v_tab || 'INSERT INTO "' || v_hist_tbl_dataowner || '"."' || v_hist_tbl || '" ' || v_hist_tbl_attr_ls || v_line_break
-            || v_tab || v_tab || 'VALUES (' || v_hist_tbl_attr_pmap_ls || ', ''' || DH_MT_ATTR."COLUMN_NAME" || ''', :OLD."' || DH_MT_ATTR."COLUMN_NAME" || '", :NEW."' || DH_MT_ATTR."COLUMN_NAME" || '");' || v_line_break
+            || v_tab || v_tab || 'INSERT INTO "' || v_hist_tbl_dataowner || '"."' || v_hist_tbl || '"' || v_line_break
+            || v_tab || v_tab || v_tab || v_hist_tbl_attr_ls || v_line_break
+            || v_tab || v_tab || v_tab || 'VALUES (' || v_hist_tbl_attr_pmap_ls || ', ''' || DH_MT_ATTR."COLUMN_NAME" || ''', :OLD."' || DH_MT_ATTR."COLUMN_NAME" || '", :NEW."' || DH_MT_ATTR."COLUMN_NAME" || '");' || v_line_break
             || v_tab || 'END IF;';
     END LOOP;
 
@@ -70,6 +71,6 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
 END;

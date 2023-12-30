@@ -31,7 +31,7 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
     v_sql_stmt := 'BEGIN' || v_line_break
         || v_tab || 'INSERT INTO "' || v_external_system_dataowner || '"."' || v_external_system_tbl || '"("' || v_external_system_dspl_attr || '") VALUES (''void'');' || v_line_break
@@ -44,6 +44,6 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
 END;

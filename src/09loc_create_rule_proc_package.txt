@@ -51,24 +51,23 @@ BEGIN
     THEN
         --Thank you, https://stackoverflow.com/a/54955439
         SELECT ATB."DATA_TYPE" ||
-        CASE
-            WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) > 0
-                THEN '(' || ATB."DATA_PRECISION" || ',' || ATB."DATA_SCALE" || ')'
-            WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) = 0
-                THEN '(' || ATB."DATA_PRECISION" || ')'
-            WHEN ATB."DATA_PRECISION" IS NULL AND ATB."DATA_SCALE" IS NOT NULL
-                THEN '(*,' || ATB."DATA_SCALE" || ')'
-            WHEN ATB."CHAR_LENGTH" > 0
-                THEN '(' || ATB."CHAR_LENGTH" ||
-                    CASE ATB."CHAR_USED"
-                        WHEN 'B' THEN ' BYTE'
-                        WHEN 'C' THEN ' CHAR'
-                        ELSE NULL
-                    END || ')'
-            END
-        INTO v_rule_priority_datatype
-        FROM ALL_TAB_COLUMNS ATB
-        WHERE ATB."OWNER" = v_rule_dataowner AND ATB."TABLE_NAME" = v_rule_tbl AND ATB."COLUMN_NAME" = v_rule_priority_col_name;
+            CASE
+                WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) > 0
+                    THEN '(' || ATB."DATA_PRECISION" || ',' || ATB."DATA_SCALE" || ')'
+                WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) = 0
+                    THEN '(' || ATB."DATA_PRECISION" || ')'
+                WHEN ATB."DATA_PRECISION" IS NULL AND ATB."DATA_SCALE" IS NOT NULL
+                    THEN '(*,' || ATB."DATA_SCALE" || ')'
+                WHEN ATB."CHAR_LENGTH" > 0
+                    THEN '(' || ATB."CHAR_LENGTH" ||
+                        CASE ATB."CHAR_USED"
+                            WHEN 'B' THEN ' BYTE'
+                            WHEN 'C' THEN ' CHAR'
+                            ELSE NULL
+                        END || ')'
+                END
+            INTO v_rule_priority_datatype FROM ALL_TAB_COLUMNS ATB
+            WHERE ATB."OWNER" = v_rule_dataowner AND ATB."TABLE_NAME" = v_rule_tbl AND ATB."COLUMN_NAME" = v_rule_priority_col_name;
     END IF;
 
     IF v_app_proc_commit_threshold < 1
@@ -138,7 +137,7 @@ BEGIN
 
         dbms_output.put_line(v_sql_stmt);
         dbms_output.put_line(NULL);
-        EXECUTE IMMEDIATE v_sql_stmt;
+        --EXECUTE IMMEDIATE v_sql_stmt;
 
     v_sql_stmt := 'CREATE OR REPLACE PACKAGE BODY "' || v_rule_pckg_dataowner || '"."' || v_rule_pckg ||  '" AS' || v_line_break
         || v_line_break
@@ -302,5 +301,5 @@ BEGIN
 
         dbms_output.put_line(v_sql_stmt);
         dbms_output.put_line(NULL);
-        EXECUTE IMMEDIATE v_sql_stmt;
+        --EXECUTE IMMEDIATE v_sql_stmt;
 END;

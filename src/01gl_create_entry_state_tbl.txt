@@ -29,7 +29,7 @@ BEGIN
     v_sql_stmt := 'COMMENT ON TABLE "' || v_entry_state_dataowner || '"."' || v_entry_state_tbl || '" IS ''Table of all possible entry states''';
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
     
     v_sql_stmt := 'BEGIN' || v_line_break
         || v_tab || 'INSERT INTO "' || v_entry_state_dataowner || '"."' || v_entry_state_tbl || '" ("' || v_entry_state_dspl_attr || '") VALUES (''in_process_queue'');' || v_line_break
@@ -44,6 +44,6 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
 END;

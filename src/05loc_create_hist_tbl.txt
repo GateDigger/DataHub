@@ -9,6 +9,8 @@ DECLARE
 
     v_hist_dataowner VARCHAR2(255 CHAR); --Defaults to v_main_dataowner if left empty
     v_hist_tbl VARCHAR2(255 CHAR) := v_main_tbl || '_DH_HIST_TBL';
+    v_hist_attribute_name_type VARCHAR2(255 CHAR); --Defaults to VARCHAR2(N BYTES) where N is the length of the longest name of a non-blacklisted column in the table
+    v_hist_attribute_value_type VARCHAR2(255 CHAR) := 'VARCHAR2(255 CHAR)'; --Default not yet implemented
 
     v_sql_stmt CLOB;
 
@@ -26,58 +28,69 @@ BEGIN
 
     IF v_main_tbl_pkey_type IS NULL
     THEN
+
         --Thank you, https://stackoverflow.com/a/54955439
         SELECT ATB."DATA_TYPE" ||
-        CASE
-            WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) > 0
-                THEN '(' || ATB."DATA_PRECISION" || ',' || ATB."DATA_SCALE" || ')'
-            WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) = 0
-                THEN '(' || ATB."DATA_PRECISION" || ')'
-            WHEN ATB."DATA_PRECISION" IS NULL AND ATB."DATA_SCALE" IS NOT NULL
-                THEN '(*,' || ATB."DATA_SCALE" || ')'
-            WHEN ATB."CHAR_LENGTH" > 0
-                THEN '(' || ATB."CHAR_LENGTH" ||
-                    CASE ATB."CHAR_USED"
-                        WHEN 'B' THEN ' BYTE'
-                        WHEN 'C' THEN ' CHAR'
-                        ELSE NULL
-                    END || ')'
-            END
-        INTO v_main_tbl_pkey_type
-        FROM ALL_TAB_COLUMNS ATB
-        WHERE (ATB."OWNER", ATB."TABLE_NAME", ATB."COLUMN_NAME") IN
-        (
-            SELECT ACC."OWNER", ACC."TABLE_NAME", ACC."COLUMN_NAME" FROM ALL_CONS_COLUMNS ACC
-            WHERE (ACC."OWNER", ACC."CONSTRAINT_NAME") IN 
-                (
-                    SELECT AC."OWNER", AC."CONSTRAINT_NAME" FROM ALL_CONSTRAINTS AC
-                    WHERE AC."OWNER" = v_main_dataowner AND AC."TABLE_NAME" = v_main_tbl AND AC."CONSTRAINT_TYPE" = 'P' AND AC."STATUS" = 'ENABLED'
-                )
-        );
+            CASE
+                WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) > 0
+                    THEN '(' || ATB."DATA_PRECISION" || ',' || ATB."DATA_SCALE" || ')'
+                WHEN ATB."DATA_PRECISION" IS NOT NULL AND NVL (ATB."DATA_SCALE", 0) = 0
+                    THEN '(' || ATB."DATA_PRECISION" || ')'
+                WHEN ATB."DATA_PRECISION" IS NULL AND ATB."DATA_SCALE" IS NOT NULL
+                    THEN '(*,' || ATB."DATA_SCALE" || ')'
+                WHEN ATB."CHAR_LENGTH" > 0
+                    THEN '(' || ATB."CHAR_LENGTH" ||
+                        CASE ATB."CHAR_USED"
+                            WHEN 'B' THEN ' BYTE'
+                            WHEN 'C' THEN ' CHAR'
+                            ELSE NULL
+                        END || ')'
+                END
+            INTO v_main_tbl_pkey_type FROM ALL_TAB_COLUMNS ATB
+            WHERE (ATB."OWNER", ATB."TABLE_NAME", ATB."COLUMN_NAME") IN
+            (
+                SELECT ACC."OWNER", ACC."TABLE_NAME", ACC."COLUMN_NAME" FROM ALL_CONS_COLUMNS ACC
+                    WHERE (ACC."OWNER", ACC."CONSTRAINT_NAME") IN 
+                    (
+                        SELECT AC."OWNER", AC."CONSTRAINT_NAME" FROM ALL_CONSTRAINTS AC
+                        WHERE AC."OWNER" = v_main_dataowner AND AC."TABLE_NAME" = v_main_tbl AND AC."CONSTRAINT_TYPE" = 'P' AND AC."STATUS" = 'ENABLED'
+                    )
+            );
+
     END IF;
+
+    IF v_hist_attribute_name_type IS NULL
+    THEN
+
+        SELECT 'VARCHAR2(' || MAX(LENGTH(COLUMN_NAME)) || ' BYTE)' INTO v_hist_attribute_name_type FROM ALL_TAB_COLUMNS ATC
+            WHERE ATC."OWNER" = v_main_dataowner AND ATC."TABLE_NAME" = v_main_tbl AND ATC."COLUMN_NAME" NOT IN ('MODIFICATION_SRC_TYPE', 'MODIFICATION_SRC') AND ATC."DATA_TYPE" NOT IN ('CLOB', 'BLOB', 'LONG', 'XMLTYPE');
+
+    END IF;
+
+    --TODO: create a select to dynamically determine value length limit
 
     v_sql_stmt := 'CREATE TABLE "' || v_hist_dataowner || '"."' || v_hist_tbl || '"' || v_line_break
         || '(' || v_line_break
-        || v_tab || ' "OID" NUMBER GENERATED ALWAYS AS IDENTITY (MINVALUE 1 NOMAXVALUE INCREMENT BY 1 START WITH 1 CACHE 20 ORDER NOCYCLE NOKEEP NOSCALE) NOT NULL ENABLE,' || v_line_break
-        || v_tab || ' "MODIFICATION_SRC_TYPE" VARCHAR2(7 CHAR) NOT NULL ENABLE,' || v_line_break
-        || v_tab || ' "MODIFICATION_SRC" VARCHAR2(63 CHAR) NOT NULL ENABLE,' || v_line_break
-        || v_tab || ' "MODIFICATION_USER" VARCHAR2(63 CHAR) DEFAULT USER NOT NULL ENABLE,' || v_line_break
-        || v_tab || ' "MODIFICATION_DATE" DATE DEFAULT SYSDATE NOT NULL ENABLE,' || v_line_break
-        || v_tab || ' "TARGET_OID" ' || v_main_tbl_pkey_type || ' NOT NULL ENABLE,' || v_line_break
-        || v_tab || ' "TARGET_ATTRIBUTE" VARCHAR2(255 CHAR) NOT NULL ENABLE,' || v_line_break
-        || v_tab || ' "TARGET_OLD_VAL" VARCHAR2(255 CHAR),' || v_line_break --TODO: create a select to dynamically determine length limit
-        || v_tab || ' "TARGET_NEW_VAL" VARCHAR2(255 CHAR),' || v_line_break
-        || v_tab || ' CONSTRAINT "' || v_hist_tbl || '_PK" PRIMARY KEY ("OID") USING INDEX ENABLE' || v_line_break
+        || v_tab || '"OID" NUMBER GENERATED ALWAYS AS IDENTITY (MINVALUE 1 NOMAXVALUE INCREMENT BY 1 START WITH 1 CACHE 20 ORDER NOCYCLE NOKEEP NOSCALE) NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"MODIFICATION_SRC_TYPE" VARCHAR2(7 CHAR) NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"MODIFICATION_SRC" VARCHAR2(63 CHAR) NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"MODIFICATION_USER" VARCHAR2(63 CHAR) DEFAULT USER NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"MODIFICATION_DATE" DATE DEFAULT SYSDATE NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"TARGET_OID" ' || v_main_tbl_pkey_type || ' NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"TARGET_ATTRIBUTE" ' || v_hist_attribute_name_type || ' NOT NULL ENABLE,' || v_line_break
+        || v_tab || '"TARGET_OLD_VAL" ' || v_hist_attribute_value_type || ',' || v_line_break
+        || v_tab || '"TARGET_NEW_VAL" ' || v_hist_attribute_value_type || ',' || v_line_break
+        || v_tab || 'CONSTRAINT "' || v_hist_tbl || '_PK" PRIMARY KEY ("OID") USING INDEX ENABLE' || v_line_break
         || ')';
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
     v_sql_stmt := 'COMMENT ON TABLE "' || v_hist_dataowner || '"."' || v_hist_tbl || '" IS ''Modification history for ' || v_main_dataowner || '.' || v_main_tbl  || '''';
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
 END;

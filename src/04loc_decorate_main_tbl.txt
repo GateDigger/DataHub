@@ -56,6 +56,6 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
 END;

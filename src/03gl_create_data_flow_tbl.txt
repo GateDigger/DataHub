@@ -38,13 +38,13 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
     v_sql_stmt := 'COMMENT ON TABLE "' || v_data_flow_dataowner || '"."' || v_data_flow_tbl || '" IS ''Flow history for all business data''';
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
     --Dummy flow object for testing purposes
     v_sql_stmt := 'BEGIN' || v_line_break
@@ -55,6 +55,6 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
 END;

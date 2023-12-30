@@ -40,12 +40,12 @@ BEGIN
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
     v_sql_stmt := 'COMMENT ON TABLE "' || v_rule_dataowner || '"."' || v_rule_tbl || '" IS ''Rules for ' || v_main_dataowner || '.' || v_main_tbl || '''';
 
     dbms_output.put_line(v_sql_stmt);
     dbms_output.put_line(NULL);
-    EXECUTE IMMEDIATE v_sql_stmt;
+    --EXECUTE IMMEDIATE v_sql_stmt;
 
 END;
